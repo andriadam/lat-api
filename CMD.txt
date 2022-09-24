@@ -1,0 +1,6 @@
+composer create-project laravel/laravel:^8.0 lat-api
+
+// jwt   https://jwt-auth.readthedocs.io/en/develop/laravel-installation/
+composer require tymon/jwt-auth "^1.0"
+php artisan vendor:publish --provider="Tymon\JWTAuth\Providers\LaravelServiceProvider"
+php artisan jwt:secret
