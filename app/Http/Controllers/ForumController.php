@@ -17,6 +17,12 @@ class ForumController extends Controller
     {
         return Forum::with('user')->withCount('comment')->paginate(3);
     }
+    
+    
+    public function filterTag($tag)
+    {
+        return Forum::where('category', $tag)->with('user')->withCount('comment')->paginate(3);
+    }
 
     /**
      * Store a newly created resource in storage.
