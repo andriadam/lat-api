@@ -12,3 +12,7 @@ php artisan make:controller RegisterController
 php artisan make:model Forum -m
 
 php artisan make:controller ForumController --api
+
+php artisan make:model Comment -m
+
+php artisan make:controller CommentController --api

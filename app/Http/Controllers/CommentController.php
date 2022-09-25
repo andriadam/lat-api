@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Comment;
 use App\Models\Forum;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use PhpParser\Node\Stmt\TryCatch;
 
-class ForumController extends Controller
+class CommentController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -15,7 +17,7 @@ class ForumController extends Controller
      */
     public function index()
     {
-        return Forum::with('user')->withCount('comment')->paginate(3);
+        //
     }
 
     /**
@@ -24,14 +26,12 @@ class ForumController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(Request $request, $forum_id)
     {
-        // Cek validasi data
         $validator = Validator::make(request()->all(), [
-            'title' => 'required',
             'body' => 'required',
-            'category' => 'required',
         ]);
+
         if ($validator->fails()) {
             response()->json($validator->messages(), 422)->send();
             exit;
@@ -40,26 +40,13 @@ class ForumController extends Controller
         // Cek login
         $user = $this->getAuthUser();
 
-        // simpan ke database
-        Forum::create([
-            'user_id' => $user->id,
-            'title' => request('title'),
-            'category' => request('category'),
-            'body' => request('body'),
+        // Tambah di database
+        $user->comment()->create([
+            'forum_id' => $forum_id,
+            'body' => request('body')
         ]);
 
-        return response()->json(['message' => 'Forum berhasil disimpan']);
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        return Forum::with('user', 'comment')->find($id);
+        return response()->json(['message' => 'Komen berhasil dibuat']);
     }
 
     /**
@@ -69,31 +56,27 @@ class ForumController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, $forum_id, $comment_id)
     {
-        // Cek validasi data
         $validator = Validator::make(request()->all(), [
-            'title' => 'required',
             'body' => 'required',
-            'category' => 'required',
         ]);
+
         if ($validator->fails()) {
             response()->json($validator->messages(), 422)->send();
             exit;
         }
 
-        // check ownership
-        $forum = Forum::find($id);
-        $this->checkOwnership($forum->user_id);
+        // Cek kepemilikan
+        $comment = Comment::find($comment_id);
+        $this->checkOwnership($comment->user_id);
 
-        // Ubah ke database
-        $forum->update([
-            'title' => request('title'),
-            'category' => request('category'),
-            'body' => request('body'),
+        // Ubah di database
+        $comment->update([
+            'body' => request('body')
         ]);
 
-        return response()->json(['message' => 'Forum berhasil diubah']);
+        return response()->json(['message' => 'Komen berhasil diubah']);
     }
 
     /**
@@ -102,16 +85,22 @@ class ForumController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy($forum_id, $comment_id)
     {
-        // check ownership
-        $forum = Forum::find($id);
-        $this->checkOwnership($forum->user_id);
+        // Cek kepemilikan
+        $comment = Comment::find($comment_id);
 
-        // Hapus ke database
-        $forum->delete();
+        if ($comment) {
+            $this->checkOwnership($comment->user_id);
+        } else{
+            response()->json(['message' => 'Komentar tidak ditemukan'])->send();
+            exit;
+        }
 
-        return response()->json(['message' => 'Forum berhasil dihapus']);
+        // Hapus di database
+        $comment->delete();
+
+        return response()->json(['message' => 'Komen berhasil dihapus']);
     }
 
     private function getAuthUser()
@@ -119,7 +108,7 @@ class ForumController extends Controller
         try {
             return auth()->userOrFail();
         } catch (\Tymon\JWTAuth\Exceptions\UserNotDefinedException $th) {
-            response()->json(['message' => 'Harus login terlebih dahulu'])->send();
+            response()->json(['message' => 'Not Authenticated, You have to login first'])->send();
             exit;
         }
     }
@@ -128,7 +117,7 @@ class ForumController extends Controller
     {
         $user = $this->getAuthUser();
         if ($user->id != $owner) {
-            response()->json(['message' => 'Not Authorized'], 403)->send();
+            response()->json(['message' => 'Not authorized'], 403)->send();
             exit;
         }
     }
