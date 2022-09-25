@@ -6,3 +6,9 @@ php artisan vendor:publish --provider="Tymon\JWTAuth\Providers\LaravelServicePro
 php artisan jwt:secret
 
 php artisan make:controller AuthController
+
+php artisan make:controller RegisterController
+
+php artisan make:model Forum -m
+
+php artisan make:controller ForumController --api
